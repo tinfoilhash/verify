@@ -1,0 +1,25 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "cSpell.words": [
+    "cascadia",
+    "consolas",
+    "damus",
+    "eose",
+    "lipanski",
+    "maxlength",
+    "menlo",
+    "nostr",
+    "novalidate",
+    "npub",
+    "onevent",
+    "pubkeys",
+    "purplepag",
+    "tinfoilhash",
+    "urlpattern",
+    "vertexlab",
+    "vite"
+  ]
+}

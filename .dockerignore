@@ -1,0 +1,17 @@
+.DS_Store
+/.dockerignore
+/.git
+/.gitattributes
+/.gitignore
+/.nvmrc
+/.prettierrc.json
+/.release-it.json
+/.vscode
+/dist
+/Dockerfile
+/eslint.config.js
+/jsconfig.json
+/LICENSE
+/node_modules
+/README.md
+/stylelint.config.js

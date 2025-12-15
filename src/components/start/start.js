@@ -1,0 +1,141 @@
+import cssNormalize from '@/components/base/css/css_normalize'
+import '@/components/base/error'
+import THVFile from '@/services/file'
+import { css, html, LitElement, nothing } from 'lit'
+
+class THVStart extends LitElement {
+  static properties = {
+    _error: { state: true },
+  }
+
+  constructor() {
+    super()
+
+    this._preventDefault = this._preventDefault.bind(this)
+    this._dispatchFileFromDrop = this._dispatchFileFromDrop.bind(this)
+  }
+
+  connectedCallback() {
+    super.connectedCallback()
+
+    window.addEventListener('dragenter', this._preventDefault)
+    window.addEventListener('dragover', this._preventDefault)
+    window.addEventListener('drop', this._dispatchFileFromDrop)
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+
+    window.removeEventListener('dragenter', this._preventDefault)
+    window.removeEventListener('dragover', this._preventDefault)
+    window.removeEventListener('drop', this._dispatchFileFromDrop)
+  }
+
+  _preventDefault(event) {
+    event.preventDefault()
+  }
+
+  async _dispatchFile(file) {
+    try {
+      this.dispatchEvent(
+        new CustomEvent('thv-file', {
+          detail: await THVFile.build(file),
+          bubbles: true,
+          composed: true,
+        }),
+      )
+    } catch (error) {
+      this._error = error
+    }
+  }
+
+  _dispatchFileFromDrop(event) {
+    event.preventDefault()
+
+    if (event.dataTransfer.files.length) {
+      this._dispatchFile(event.dataTransfer.files[0])
+    }
+  }
+
+  _dispatchFileFromInput(event) {
+    this._dispatchFile(event.target.files[0])
+  }
+
+  render() {
+    return html`
+      ${this._error
+        ? html`<thv-error .error=${this._error}></thv-error>`
+        : nothing}
+      <h2>
+        <div>verify the integrity of a file</div>
+        <div>with the largest decentralized</div>
+        <div>web of trust</div>
+      </h2>
+      <h3>
+        drop a file to start or
+        <form>
+          <label
+            >click to browse<input
+              type="file"
+              @change=${this._dispatchFileFromInput}
+          /></label>
+        </form>
+      </h3>
+    `
+  }
+
+  static styles = [
+    cssNormalize,
+    css`
+      :host {
+        display: block;
+      }
+
+      thv-error {
+        margin-bottom: 2rem;
+      }
+
+      h2 {
+        margin: 0;
+        margin-bottom: 2rem;
+        font-size: 1.75rem;
+        font-weight: inherit;
+        line-height: 2.5rem;
+      }
+
+      h2 div:nth-of-type(2) {
+        margin-left: 1.05rem;
+      }
+
+      h2 div:nth-of-type(3) {
+        margin-left: 2.1rem;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: inherit;
+        line-height: 2rem;
+        color: var(--thv-color-500);
+      }
+
+      h3 form {
+        display: inline;
+      }
+
+      h3 form label {
+        padding-bottom: 0.25rem;
+        cursor: pointer;
+        border-bottom: 2px solid var(--thv-color-700);
+      }
+
+      h3 form label input[type='file'] {
+        display: none;
+      }
+    `,
+  ]
+}
+
+customElements.define('thv-start', THVStart)
+
+export default THVStart
