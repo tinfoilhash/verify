@@ -48,7 +48,7 @@ class THVVerify extends LitElement {
   }
 
   get _canPublish() {
-    return this.file?.hash === this.hash && !this.file.hasBeenPublished
+    return this.file?.hash === this.hash && !this._hasCurrentUserVerified
   }
 
   get _eventsSorted() {
