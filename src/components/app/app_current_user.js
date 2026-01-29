@@ -48,7 +48,10 @@ class THVAppCurrentUser extends LitElement {
     return html`
       ${error ? html`<thv-error .error=${error}></thv-error>` : nothing}
       <thv-button ?pending=${currentUserConnection.isPending}>
-        <button @click=${this._connectOrDisconnect}>
+        <button
+          ?disabled=${currentUserConnection.isPending}
+          @click=${this._connectOrDisconnect}
+        >
           ${currentUser
             ? `connected: ${currentUser.userEvent.displayName}`
             : 'connect'}
