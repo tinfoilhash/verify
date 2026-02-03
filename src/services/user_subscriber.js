@@ -8,6 +8,7 @@ class UserSubscriber {
   onChange = null
   event = null
   relayPool = relayPool
+  promise = null
 
   constructor({ pubkey, onChange = null }) {
     this.pubkey = pubkey
@@ -15,7 +16,7 @@ class UserSubscriber {
   }
 
   async subscribe() {
-    return await new Promise((resolve) => {
+    this.promise ||= new Promise((resolve) => {
       this.relayPool.subscribeManyEose(
         this.constructor.RELAY_URLS,
         {
@@ -42,6 +43,8 @@ class UserSubscriber {
         },
       )
     })
+
+    return await this.promise
   }
 }
 

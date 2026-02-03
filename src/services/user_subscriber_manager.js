@@ -8,32 +8,60 @@ class UserSubscriberManager extends EventTarget {
   }
 
   get(pubkey) {
-    return this.subscribers.get(pubkey)?.event
+    return this.subscribers.get(pubkey)
   }
 
-  async subscribe(pubkey) {
-    if (this.has(pubkey)) {
-      return this.get(pubkey)
+  getEvent(pubkey) {
+    return this.get(pubkey)?.event
+  }
+
+  async subscribe({ pubkey, onChange = null }) {
+    const listener = onChange
+      ? ({ detail: userEvent }) => {
+          if (pubkey === userEvent.pubkey) {
+            onChange(userEvent)
+          }
+        }
+      : null
+
+    if (listener) {
+      this.addEventListener('change', listener)
     }
 
-    const subscriber = new UserSubscriber({
-      pubkey,
-      onChange: (userEvent) => {
-        this.dispatchEvent(new CustomEvent('change', { detail: userEvent }))
-      },
-    })
+    try {
+      if (this.has(pubkey)) {
+        const subscriber = this.get(pubkey)
 
-    this.subscribers.set(pubkey, subscriber)
+        if (subscriber.event) {
+          onChange?.(subscriber.event)
+        }
 
-    return await subscriber.subscribe()
+        return await subscriber.subscribe()
+      }
+
+      const subscriber = new UserSubscriber({
+        pubkey,
+        onChange: (userEvent) => {
+          this.dispatchEvent(new CustomEvent('change', { detail: userEvent }))
+        },
+      })
+
+      this.subscribers.set(pubkey, subscriber)
+
+      return await subscriber.subscribe()
+    } finally {
+      if (listener) {
+        this.removeEventListener('change', listener)
+      }
+    }
   }
 
   getOrSubscribe(pubkey) {
     if (this.has(pubkey)) {
-      return this.get(pubkey)
+      return this.getEvent(pubkey)
     }
 
-    this.subscribe(pubkey).catch(() => {
+    this.subscribe({ pubkey }).catch(() => {
       // Ignore to allow this to be called synchronously.
     })
 

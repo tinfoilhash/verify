@@ -20,6 +20,9 @@ class CurrentUserConnection extends EventTarget {
   currentUser = null
   error = null
 
+  userEvent = null
+  followListEvent = null
+
   get canConnect() {
     return Boolean(
       window.nostr || window.localStorage.getItem(this.constructor.STORAGE_KEY),
@@ -35,6 +38,11 @@ class CurrentUserConnection extends EventTarget {
     this.currentUser = currentUser
     this.error = error
 
+    if (!this.currentUser) {
+      this.userEvent = null
+      this.followListEvent = null
+    }
+
     this.dispatchEvent(
       new CustomEvent('change', {
         detail: {
@@ -46,6 +54,24 @@ class CurrentUserConnection extends EventTarget {
     )
 
     return currentUser
+  }
+
+  dispatchCurrentUserIfReady() {
+    if (!this.userEvent || !this.followListEvent) {
+      return null
+    }
+
+    const currentUser = new CurrentUser({
+      userEvent: this.userEvent,
+      followListEvent: this.followListEvent,
+    })
+
+    this.saveToStorage(currentUser)
+
+    return this.dispatchChange({
+      status: this.constructor.STATUSES.CONNECTED,
+      currentUser,
+    })
   }
 
   shouldRefresh(currentUser) {
@@ -81,26 +107,24 @@ class CurrentUserConnection extends EventTarget {
     return window.localStorage.removeItem(this.constructor.STORAGE_KEY)
   }
 
-  async getUserEvent(pubkey, currentUser = null) {
-    const userEvent = await userSubscriberManager.subscribe(pubkey)
-
-    if (!userEvent) {
-      return currentUser?.userEvent
-    }
-
-    return userEvent
+  async subscribeUserEvent(pubkey) {
+    return await userSubscriberManager.subscribe({
+      pubkey,
+      onChange: (userEvent) => {
+        this.userEvent = userEvent
+        this.dispatchCurrentUserIfReady()
+      },
+    })
   }
 
-  async getFollowListEvent(pubkey, currentUser = null) {
-    const followListEvent = await new FollowListSubscriber({
+  async subscribeFollowListEvent(pubkey) {
+    return await new FollowListSubscriber({
       pubkey,
+      onChange: (followListEvent) => {
+        this.followListEvent = followListEvent
+        this.dispatchCurrentUserIfReady()
+      },
     }).subscribe()
-
-    if (!followListEvent) {
-      return currentUser?.followListEvent
-    }
-
-    return followListEvent
   }
 
   async connect({
@@ -109,13 +133,27 @@ class CurrentUserConnection extends EventTarget {
     ignoreNoPubkeyError = false,
   } = {}) {
     try {
-      if (pubkey && pubkey === this.currentUser?.pubkey) {
-        return this.currentUser
+      let currentUser = this.currentUser ?? this.loadFromStorage()
+
+      if (pubkey && currentUser && pubkey !== currentUser.pubkey) {
+        currentUser = this.disconnect()
       }
 
-      this.dispatchChange({ status: this.constructor.STATUSES.PENDING })
+      if (currentUser) {
+        this.userEvent = currentUser.userEvent
+        this.followListEvent = currentUser.followListEvent
 
-      let currentUser
+        this.dispatchChange({
+          status: this.constructor.STATUSES.CONNECTED,
+          currentUser,
+        })
+
+        if (!this.shouldRefresh(currentUser)) {
+          return currentUser
+        }
+
+        pubkey = currentUser.pubkey
+      }
 
       if (!pubkey) {
         if (!this.canConnect) {
@@ -128,52 +166,39 @@ class CurrentUserConnection extends EventTarget {
           throw new Error('unable to connect without nostr browser extension')
         }
 
-        currentUser = this.loadFromStorage()
-
-        if (currentUser && !this.shouldRefresh(currentUser)) {
-          return this.dispatchChange({
-            status: this.constructor.STATUSES.CONNECTED,
-            currentUser,
-          })
-        }
-
-        pubkey = currentUser?.pubkey
-
-        if (!pubkey) {
-          if (!canAskForPubkey) {
-            if (ignoreNoPubkeyError) {
-              return this.dispatchChange({
-                status: this.constructor.STATUSES.DISCONNECTED,
-              })
-            }
-
-            throw new Error('unable to connect without pubkey')
+        if (!canAskForPubkey) {
+          if (ignoreNoPubkeyError) {
+            return this.dispatchChange({
+              status: this.constructor.STATUSES.DISCONNECTED,
+            })
           }
 
-          pubkey = await window.nostr.getPublicKey()
+          throw new Error('unable to connect without pubkey')
         }
+
+        this.dispatchChange({ status: this.constructor.STATUSES.PENDING })
+
+        pubkey = await window.nostr.getPublicKey()
       }
 
-      const userEvent = await this.getUserEvent(pubkey, currentUser)
+      if (!currentUser && !this.isPending) {
+        this.dispatchChange({ status: this.constructor.STATUSES.PENDING })
+      }
 
-      if (!userEvent) {
+      await Promise.all([
+        this.subscribeUserEvent(pubkey),
+        this.subscribeFollowListEvent(pubkey),
+      ])
+
+      if (!this.userEvent) {
         throw new Error('unable to find your profile')
       }
 
-      const followListEvent = await this.getFollowListEvent(pubkey, currentUser)
-
-      if (!followListEvent) {
+      if (!this.followListEvent) {
         throw new Error('unable to find who you follow')
       }
 
-      currentUser = new CurrentUser({ userEvent, followListEvent })
-
-      this.saveToStorage(currentUser)
-
-      return this.dispatchChange({
-        status: this.constructor.STATUSES.CONNECTED,
-        currentUser,
-      })
+      return this.currentUser
     } catch (error) {
       return this.dispatchChange({
         status: this.constructor.STATUSES.ERROR,
