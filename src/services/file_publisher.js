@@ -1,14 +1,11 @@
 import currentUserConnection from '@/services/current_user_connection'
 import FileEvent from '@/services/file_event'
-import relayPool from '@/services/relay_pool'
+import relayPool, { FILE_RELAY_URLS } from '@/services/relay_pool'
 
 class FilePublisher {
-  static RELAY_URLS = import.meta.env.VITE_FILE_RELAY_URLS?.split(',') ?? []
-
   file
   description
   url
-  relayPool = relayPool
 
   constructor({ file, description, url }) {
     this.file = file
@@ -29,9 +26,7 @@ class FilePublisher {
       content: this.description,
     })
 
-    await Promise.all(
-      this.relayPool.publish(this.constructor.RELAY_URLS, event),
-    )
+    await Promise.all(relayPool.publish(FILE_RELAY_URLS, event))
 
     const fileEvent = new FileEvent(event)
 

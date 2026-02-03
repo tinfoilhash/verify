@@ -1,14 +1,11 @@
 import FileEvent from '@/services/file_event'
-import relayPool from '@/services/relay_pool'
+import relayPool, { FILE_RELAY_URLS } from '@/services/relay_pool'
 import userSubscriberManager from '@/services/user_subscriber_manager'
 
 class FileSubscriber {
-  static RELAY_URLS = import.meta.env.VITE_FILE_RELAY_URLS?.split(',') ?? []
-
   hash
   onChange = null
   events = []
-  relayPool = relayPool
   userSubscriberManager = this.connectUserSubscriberManager()
 
   constructor({ hash, onChange = null }) {
@@ -37,8 +34,8 @@ class FileSubscriber {
 
   async subscribe() {
     return await new Promise((resolve, reject) => {
-      this.relayPool.subscribeManyEose(
-        this.constructor.RELAY_URLS,
+      relayPool.subscribeManyEose(
+        FILE_RELAY_URLS,
         {
           kinds: [FileEvent.KIND],
           '#x': [this.hash],
@@ -63,7 +60,7 @@ class FileSubscriber {
           },
           onclose: async () => {
             try {
-              if (this.relayPool.listConnectionStatus().size === 0) {
+              if (relayPool.listConnectionStatus().size === 0) {
                 reject(new Error('unable to connect to verify server'))
               } else {
                 resolve(this.events)

@@ -1,13 +1,10 @@
 import FollowListEvent from '@/services/follow_list_event'
-import relayPool from '@/services/relay_pool'
+import relayPool, { USER_RELAY_URLS } from '@/services/relay_pool'
 
 class FollowListSubscriber {
-  static RELAY_URLS = import.meta.env.VITE_USER_RELAY_URLS?.split(',') ?? []
-
   pubkey
   onChange = null
   event = null
-  relayPool = relayPool
 
   constructor({ pubkey, onChange = null }) {
     this.pubkey = pubkey
@@ -16,8 +13,8 @@ class FollowListSubscriber {
 
   async subscribe() {
     return await new Promise((resolve) => {
-      this.relayPool.subscribeManyEose(
-        this.constructor.RELAY_URLS,
+      relayPool.subscribeManyEose(
+        USER_RELAY_URLS,
         {
           kinds: [FollowListEvent.KIND],
           authors: [this.pubkey],
