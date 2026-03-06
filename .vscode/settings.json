@@ -2,7 +2,7 @@
   "editor.formatOnSave": true,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
-  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
   "cSpell.words": [
     "cascadia",
     "consolas",
