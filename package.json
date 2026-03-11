@@ -28,15 +28,15 @@
     "@lit/task": "^1.0.3",
     "lit": "^3.3.2",
     "modern-normalize": "^3.0.1",
-    "nostr-tools": "^2.23.2",
+    "nostr-tools": "^2.23.3",
     "urlpattern-polyfill": "^10.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.0.2",
+    "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-lit": "^2.2.1",
-    "globals": "^17.3.0",
+    "globals": "^17.4.0",
     "postcss-lit": "^1.4.1",
     "prettier": "3.8.1",
     "release-it": "^19.2.4",
