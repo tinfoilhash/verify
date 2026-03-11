@@ -1,11 +1,13 @@
 import cssNormalize from '@/components/base/css/css_normalize'
 import '@/components/base/error'
+import '@/components/base/spinner'
 import THVFile from '@/services/file'
 import { css, html, LitElement, nothing } from 'lit'
 
 class THVStart extends LitElement {
   static properties = {
     _error: { state: true },
+    _isDispatchingFile: { state: true },
   }
 
   constructor() {
@@ -36,6 +38,8 @@ class THVStart extends LitElement {
   }
 
   async _dispatchFile(file) {
+    this._isDispatchingFile = true
+
     try {
       this.dispatchEvent(
         new CustomEvent('thv-file', {
@@ -46,6 +50,8 @@ class THVStart extends LitElement {
       )
     } catch (error) {
       this._error = error
+    } finally {
+      this._isDispatchingFile = false
     }
   }
 
@@ -80,6 +86,7 @@ class THVStart extends LitElement {
               @change=${this._dispatchFileFromInput}
           /></label>
         </form>
+        ${this._isDispatchingFile ? html`<thv-spinner></thv-spinner>` : nothing}
       </h3>
     `
   }
@@ -120,13 +127,17 @@ class THVStart extends LitElement {
       }
 
       h3 form {
-        display: inline;
+        display: inline-block;
       }
 
       h3 form label {
         padding-bottom: 0.25rem;
         cursor: pointer;
         border-bottom: 2px solid var(--thv-color-700);
+      }
+
+      h3 thv-spinner {
+        color: var(--thv-color-100);
       }
 
       h3 form label input[type='file'] {
